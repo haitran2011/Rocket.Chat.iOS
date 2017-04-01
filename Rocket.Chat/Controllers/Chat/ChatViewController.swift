@@ -182,21 +182,19 @@ final class ChatViewController: SLKTextViewController {
     }
 
     fileprivate func scrollToBottom(_ animated: Bool = false) {
-        let totalItems = (collectionView?.numberOfItems(inSection: 0) ?? 0) - 1
+        guard let collectionView = collectionView else { return }
 
-        if totalItems > 0 {
-            let indexPath = IndexPath(row: totalItems, section: 0)
-            collectionView?.scrollToItem(at: indexPath, at: .bottom, animated: animated)
-        }
+        let bottomOffset = CGPoint(x: 0, y: collectionView.contentSize.height - collectionView.bounds.size.height)
+        collectionView.setContentOffset(bottomOffset, animated: animated)
 
-        hideButtonScrollToBottom(animated: true)
+        hideButtonScrollToBottom(animated: false)
     }
 
     fileprivate func hideButtonScrollToBottom(animated: Bool) {
         buttonScrollToBottomMarginConstraint?.constant = 50
 
         let action = {
-            self.view.layoutIfNeeded()
+            self.buttonScrollToBottom.layoutIfNeeded()
         }
 
         if animated {
@@ -265,11 +263,6 @@ final class ChatViewController: SLKTextViewController {
         chatTitleView?.subscription = subscription
         textView.resignFirstResponder()
 
-        collectionView?.performBatchUpdates({
-            let indexPaths = self.dataController.clear()
-            self.collectionView?.deleteItems(at: indexPaths)
-        }, completion: nil)
-
         if self.subscription?.isValid() ?? false {
             self.updateSubscriptionMessages()
         } else {
@@ -293,6 +286,8 @@ final class ChatViewController: SLKTextViewController {
         isRequestingHistory = true
 
         messages = subscription.fetchMessages()
+
+        scrollToBottom()
         appendMessages(messages: Array(messages), updateScrollPosition: false, completion: {
             guard let messages = self.messages else { return }
 
@@ -301,22 +296,26 @@ final class ChatViewController: SLKTextViewController {
             } else {
                 self.scrollToBottom()
             }
+
+            MessageManager.getHistory(subscription, lastMessageDate: nil) { [weak self] _ in
+                let messages = subscription.fetchMessages()
+
+                self?.appendMessages(messages: Array(messages), updateScrollPosition: false, completion: {
+                    self?.activityIndicator.stopAnimating()
+                    self?.scrollToBottom(true)
+                    self?.isRequestingHistory = false
+                })
+            }
         })
 
         messagesToken = messages.addNotificationBlock { [weak self] _ in
-            guard let isRequestingHistory = self?.isRequestingHistory, !isRequestingHistory else { return }
-            let messages = subscription.fetchMessages()
-            self?.appendMessages(messages: Array(messages), updateScrollPosition: true, completion: nil)
-        }
-
-        MessageManager.getHistory(subscription, lastMessageDate: nil) { [weak self] _ in
             let messages = subscription.fetchMessages()
 
-            self?.appendMessages(messages: Array(messages), updateScrollPosition: false, completion: {
-                self?.activityIndicator.stopAnimating()
-                self?.scrollToBottom()
-                self?.isRequestingHistory = false
-            })
+            self?.appendMessages(
+                messages: Array(messages),
+                updateScrollPosition: true,
+                completion: nil
+            )
         }
 
         MessageManager.changes(subscription)
@@ -336,7 +335,7 @@ final class ChatViewController: SLKTextViewController {
         }
     }
 
-    fileprivate func appendMessages(messages: [Message], updateScrollPosition: Bool = false, completion: VoidCompletion?) {
+    fileprivate func appendMessages(messages: [Message], updateScrollPosition: Bool = false, animated: Bool = false, completion: VoidCompletion?) {
         guard let collectionView = self.collectionView else { return }
 
         var contentHeight = collectionView.contentSize.height
