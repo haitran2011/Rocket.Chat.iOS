@@ -13,7 +13,6 @@ def shared_pods
   pod 'semver'
 
   # UI
-  pod 'SideMenuController'
   pod 'SlackTextViewController'
   pod 'MobilePlayer'
   pod 'URBMediaFocusViewController'
