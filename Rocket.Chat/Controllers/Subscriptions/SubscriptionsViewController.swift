@@ -326,9 +326,10 @@ extension SubscriptionsViewController: UITableViewDelegate {
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let subscription = self.groupSubscriptions?[indexPath.section][indexPath.row]
-        let controller = ChatViewController.sharedInstance()
-        controller?.closeSidebarAfterSubscriptionUpdate = true
-        controller?.subscription = subscription
+        if let controller = UIStoryboard(name: "Chat", bundle: Bundle.main).instantiateInitialViewController() as? ChatViewController {
+            controller.subscription = subscription
+            navigationController?.pushViewController(controller, animated: true)
+        }
     }
 }
 

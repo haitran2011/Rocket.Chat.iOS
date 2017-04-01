@@ -113,12 +113,14 @@ extension ChatViewController: UIImagePickerControllerDelegate, UINavigationContr
         }
 
         if let file = file {
+            guard let subscription = self.subscription else { return }
+
             NVActivityIndicatorPresenter.sharedInstance.startAnimating(ActivityData(
                 message: activityMessage,
                 type: .ballPulse
             ))
 
-            UploadManager.shared.upload(file: file, subscription: self.subscription, progress: { _ in
+            UploadManager.shared.upload(file: file, subscription: subscription, progress: { _ in
                 // We currently don't have progress being called.
             }, completion: { [unowned self] (response, error) in
                 NVActivityIndicatorPresenter.sharedInstance.stopAnimating()

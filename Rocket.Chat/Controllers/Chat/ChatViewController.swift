@@ -44,30 +44,11 @@ final class ChatViewController: SLKTextViewController {
 
     var searchResult: [String: Any] = [:]
 
-    var closeSidebarAfterSubscriptionUpdate = false
-
     var isRequestingHistory = false
     let socketHandlerToken = String.random(5)
     var messagesToken: NotificationToken!
     var messages: Results<Message>!
-    var subscription: Subscription! {
-        didSet {
-            updateSubscriptionInfo()
-            markAsRead()
-        }
-    }
-
-    // MARK: View Life Cycle
-
-    class func sharedInstance() -> ChatViewController? {
-        if let main = UIApplication.shared.delegate?.window??.rootViewController as? MainChatViewController {
-            if let nav = main.centerViewController as? UINavigationController {
-                return nav.viewControllers.first as? ChatViewController
-            }
-        }
-
-        return nil
-    }
+    var subscription: Subscription?
 
     deinit {
         NotificationCenter.default.removeObserver(self, name: NSNotification.Name.UIApplicationDidBecomeActive, object: nil)
@@ -81,9 +62,6 @@ final class ChatViewController: SLKTextViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationController?.navigationBar.isTranslucent = false
-        navigationController?.navigationBar.barTintColor = UIColor.white
-        navigationController?.navigationBar.tintColor = UIColor(rgb: 0x5B5B5B, alphaVal: 1)
 
         mediaFocusViewController.shouldDismissOnTap = true
         mediaFocusViewController.shouldShowPhotoActions = true
@@ -106,28 +84,22 @@ final class ChatViewController: SLKTextViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(ChatViewController.reconnect), name: NSNotification.Name.UIApplicationDidBecomeActive, object: nil)
         SocketManager.addConnectionHandler(token: socketHandlerToken, handler: self)
 
-        guard let auth = AuthManager.isAuthenticated() else { return }
-        let subscriptions = auth.subscriptions.sorted(byKeyPath: "lastSeen", ascending: false)
-        if let subscription = subscriptions.first {
-            self.subscription = subscription
-        }
-
         view.bringSubview(toFront: activityIndicatorContainer)
         view.bringSubview(toFront: buttonScrollToBottom)
         view.bringSubview(toFront: textInputbar)
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        updateSubscriptionInfo()
+        markAsRead()
     }
 
     internal func reconnect() {
         if !SocketManager.isConnected() {
             SocketManager.reconnect()
         }
-    }
-
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-
-        view?.layoutSubviews()
-        scrollToBottom()
     }
 
     override func viewWillLayoutSubviews() {
@@ -222,9 +194,11 @@ final class ChatViewController: SLKTextViewController {
 
     fileprivate func hideButtonScrollToBottom(animated: Bool) {
         buttonScrollToBottomMarginConstraint?.constant = 50
+
         let action = {
             self.view.layoutIfNeeded()
         }
+
         if animated {
             UIView.animate(withDuration: 0.5, animations: action)
         } else {
@@ -258,6 +232,7 @@ final class ChatViewController: SLKTextViewController {
 
     fileprivate func sendMessage() {
         guard let message = textView.text else { return }
+        guard let subscription = self.subscription else { return }
 
         if message.characters.count == 0 {
             return
@@ -274,6 +249,8 @@ final class ChatViewController: SLKTextViewController {
     // MARK: Subscription
 
     fileprivate func markAsRead() {
+        guard let subscription = self.subscription else { return }
+
         SubscriptionManager.markAsRead(subscription) { _ in
             // Nothing, for now
         }
@@ -291,24 +268,17 @@ final class ChatViewController: SLKTextViewController {
         collectionView?.performBatchUpdates({
             let indexPaths = self.dataController.clear()
             self.collectionView?.deleteItems(at: indexPaths)
-        }, completion: { _ in
-            CATransaction.commit()
+        }, completion: nil)
 
-            if self.closeSidebarAfterSubscriptionUpdate {
-                MainChatViewController.closeSideMenuIfNeeded()
-                self.closeSidebarAfterSubscriptionUpdate = false
-            }
-        })
-
-        if self.subscription.isValid() {
+        if self.subscription?.isValid() ?? false {
             self.updateSubscriptionMessages()
         } else {
-            self.subscription.fetchRoomIdentifier({ [weak self] response in
+            self.subscription?.fetchRoomIdentifier({ [weak self] response in
                 self?.subscription = response
             })
         }
 
-        if subscription.isJoined() {
+        if subscription?.isJoined() ?? true {
             setTextInputbarHidden(false, animated: false)
             chatPreviewModeView?.removeFromSuperview()
         } else {
@@ -318,6 +288,8 @@ final class ChatViewController: SLKTextViewController {
     }
 
     internal func updateSubscriptionMessages() {
+        guard let subscription = self.subscription else { return }
+
         isRequestingHistory = true
 
         messages = subscription.fetchMessages()
@@ -333,13 +305,12 @@ final class ChatViewController: SLKTextViewController {
 
         messagesToken = messages.addNotificationBlock { [weak self] _ in
             guard let isRequestingHistory = self?.isRequestingHistory, !isRequestingHistory else { return }
-            guard let messages = self?.subscription.fetchMessages() else { return }
-
+            let messages = subscription.fetchMessages()
             self?.appendMessages(messages: Array(messages), updateScrollPosition: true, completion: nil)
         }
 
         MessageManager.getHistory(subscription, lastMessageDate: nil) { [weak self] _ in
-            guard let messages = self?.subscription.fetchMessages() else { return }
+            let messages = subscription.fetchMessages()
 
             self?.appendMessages(messages: Array(messages), updateScrollPosition: false, completion: {
                 self?.activityIndicator.stopAnimating()
@@ -352,6 +323,8 @@ final class ChatViewController: SLKTextViewController {
     }
 
     fileprivate func loadMoreMessagesFrom(date: Date?) {
+        guard let subscription = self.subscription else { return }
+
         if isRequestingHistory {
             return
         }
@@ -370,61 +343,55 @@ final class ChatViewController: SLKTextViewController {
         var offsetY = collectionView.contentOffset.y
         var bottomOffset = contentHeight - offsetY
 
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
-        UIView.performWithoutAnimation {
-            collectionView.performBatchUpdates({
-                // Insert data into collectionView without moving it
-                contentHeight = collectionView.contentSize.height
-                offsetY = collectionView.contentOffset.y
-                bottomOffset = contentHeight - offsetY
+        collectionView.performBatchUpdates({
+            // Insert data into collectionView without moving it
+            contentHeight = collectionView.contentSize.height
+            offsetY = collectionView.contentOffset.y
+            bottomOffset = contentHeight - offsetY
 
-                var objs: [ChatData] = []
-                var newMessages: [Message] = []
+            var objs: [ChatData] = []
+            var newMessages: [Message] = []
 
-                // Do not add duplicated messages
-                for message in messages {
-                    var insert = true
+            // Do not add duplicated messages
+            for message in messages {
+                var insert = true
 
-                    // swiftlint:disable for_where
-                    for obj in self.dataController.data {
-                        if message.identifier == obj.message?.identifier {
-                            insert = false
-                        }
-                    }
-
-                    if insert {
-                        newMessages.append(message)
+                // swiftlint:disable for_where
+                for obj in self.dataController.data {
+                    if message.identifier == obj.message?.identifier {
+                        insert = false
                     }
                 }
 
-                // Normalize data into ChatData object
-                for message in newMessages {
-                    guard let createdAt = message.createdAt else { continue }
-                    guard var obj = ChatData(type: .message, timestamp: createdAt) else { continue }
-                    obj.message = message
-                    objs.append(obj)
+                if insert {
+                    newMessages.append(message)
                 }
+            }
 
-                // No new data? Don't update it then
-                if objs.count == 0 {
-                    return
-                }
+            // Normalize data into ChatData object
+            for message in newMessages {
+                guard let createdAt = message.createdAt else { continue }
+                guard var obj = ChatData(type: .message, timestamp: createdAt) else { continue }
+                obj.message = message
+                objs.append(obj)
+            }
 
-                let indexPaths = self.dataController.insert(objs)
-                collectionView.insertItems(at: indexPaths)
-            }, completion: { _ in
-                let shouldScroll = self.isContentBiggerThanContainerHeight()
-                if updateScrollPosition && shouldScroll {
-                    let offset = CGPoint(x: 0, y: collectionView.contentSize.height - bottomOffset)
-                    collectionView.contentOffset = offset
-                }
+            // No new data? Don't update it then
+            if objs.count == 0 {
+                return
+            }
 
-                completion?()
+            let indexPaths = self.dataController.insert(objs)
+            collectionView.insertItems(at: indexPaths)
+        }, completion: { _ in
+            let shouldScroll = self.isContentBiggerThanContainerHeight()
+            if updateScrollPosition && shouldScroll {
+                let offset = CGPoint(x: 0, y: collectionView.contentSize.height - bottomOffset)
+                collectionView.contentOffset = offset
+            }
 
-                CATransaction.commit()
-            })
-        }
+            completion?()
+        })
     }
 
     fileprivate func showChatPreviewModeView() {

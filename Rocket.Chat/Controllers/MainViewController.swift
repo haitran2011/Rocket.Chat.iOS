@@ -70,7 +70,7 @@ final class MainViewController: BaseViewController {
                     }
 
                     // Open chat
-                    let storyboardChat = UIStoryboard(name: "Chat", bundle: Bundle.main)
+                    let storyboardChat = UIStoryboard(name: "Subscriptions", bundle: Bundle.main)
                     let controller = storyboardChat.instantiateInitialViewController()
                     let application = UIApplication.shared
 

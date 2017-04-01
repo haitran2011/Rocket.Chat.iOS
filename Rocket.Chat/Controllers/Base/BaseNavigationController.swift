@@ -16,6 +16,10 @@ class BaseNavigationController: UINavigationController {
 
         let navBar = self.navigationBar
         navBar.tintColor = .RCBlue()
+        navBar.backgroundColor = .white
+        navBar.isTranslucent = false
+        navBar.tintColor = .RCBlue()
+        navBar.titleTextAttributes = [NSForegroundColorAttributeName: UIColor.RCBlue()]
     }
 
     func setTransparentTheme() {

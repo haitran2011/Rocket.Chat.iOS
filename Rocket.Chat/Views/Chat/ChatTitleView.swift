@@ -25,7 +25,7 @@ final class ChatTitleView: UIView {
 
     var subscription: Subscription! {
         didSet {
-            labelTitle.text = subscription.name
+            labelTitle.text = subscription?.name
 
             switch subscription.type {
             case .channel:
