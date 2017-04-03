@@ -302,7 +302,7 @@ final class ChatViewController: SLKTextViewController {
 
                 self?.appendMessages(messages: Array(messages), updateScrollPosition: false, completion: {
                     self?.activityIndicator.stopAnimating()
-                    self?.scrollToBottom(true)
+                    self?.scrollToBottom(false)
                     self?.isRequestingHistory = false
                 })
             }
@@ -342,55 +342,59 @@ final class ChatViewController: SLKTextViewController {
         var offsetY = collectionView.contentOffset.y
         var bottomOffset = contentHeight - offsetY
 
-        collectionView.performBatchUpdates({
-            // Insert data into collectionView without moving it
-            contentHeight = collectionView.contentSize.height
-            offsetY = collectionView.contentOffset.y
-            bottomOffset = contentHeight - offsetY
+        UIView.performWithoutAnimation {
+            collectionView.performBatchUpdates({
+                // Insert data into collectionView without moving it
+                contentHeight = collectionView.contentSize.height
+                offsetY = collectionView.contentOffset.y
+                bottomOffset = contentHeight - offsetY
 
-            var objs: [ChatData] = []
-            var newMessages: [Message] = []
+                var objs: [ChatData] = []
+                var newMessages: [Message] = []
 
-            // Do not add duplicated messages
-            for message in messages {
-                var insert = true
+                // Do not add duplicated messages
+                for message in messages {
+                    var insert = true
 
-                // swiftlint:disable for_where
-                for obj in self.dataController.data {
-                    if message.identifier == obj.message?.identifier {
-                        insert = false
+                    // swiftlint:disable for_where
+                    for obj in self.dataController.data {
+                        if message.identifier == obj.message?.identifier {
+                            insert = false
+                        }
+                    }
+
+                    if insert {
+                        newMessages.append(message)
                     }
                 }
 
-                if insert {
-                    newMessages.append(message)
+                // Normalize data into ChatData object
+                for message in newMessages {
+                    guard let createdAt = message.createdAt else { continue }
+                    guard var obj = ChatData(type: .message, timestamp: createdAt) else { continue }
+                    obj.message = message
+                    objs.append(obj)
                 }
-            }
 
-            // Normalize data into ChatData object
-            for message in newMessages {
-                guard let createdAt = message.createdAt else { continue }
-                guard var obj = ChatData(type: .message, timestamp: createdAt) else { continue }
-                obj.message = message
-                objs.append(obj)
-            }
+                // No new data? Don't update it then
+                if objs.count == 0 {
+                    return
+                }
 
-            // No new data? Don't update it then
-            if objs.count == 0 {
-                return
-            }
+                let indexPaths = self.dataController.insert(objs)
+                collectionView.insertItems(at: indexPaths)
+            }, completion: { _ in
+                let shouldScroll = self.isContentBiggerThanContainerHeight()
+                if updateScrollPosition && shouldScroll {
+                    let offset = CGPoint(x: 0, y: collectionView.contentSize.height - bottomOffset)
+                    collectionView.contentOffset = offset
+                }
 
-            let indexPaths = self.dataController.insert(objs)
-            collectionView.insertItems(at: indexPaths)
-        }, completion: { _ in
-            let shouldScroll = self.isContentBiggerThanContainerHeight()
-            if updateScrollPosition && shouldScroll {
-                let offset = CGPoint(x: 0, y: collectionView.contentSize.height - bottomOffset)
-                collectionView.contentOffset = offset
-            }
-
-            completion?()
-        })
+                UIView.animate(withDuration: 0, animations: {
+                    completion?()
+                })
+            })
+        }
     }
 
     fileprivate func showChatPreviewModeView() {
