@@ -309,6 +309,10 @@ final class ChatViewController: SLKTextViewController {
         })
 
         messagesToken = messages.addNotificationBlock { [weak self] _ in
+            if self?.isRequestingHistory ?? false {
+                return
+            }
+
             let messages = subscription.fetchMessages()
 
             self?.appendMessages(
