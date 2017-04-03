@@ -50,6 +50,10 @@ final class ChatViewController: SLKTextViewController {
     var messages: Results<Message>!
     var subscription: Subscription?
 
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+        return .default
+    }
+
     deinit {
         NotificationCenter.default.removeObserver(self, name: NSNotification.Name.UIApplicationDidBecomeActive, object: nil)
         SocketManager.removeConnectionHandler(token: socketHandlerToken)
@@ -91,6 +95,7 @@ final class ChatViewController: SLKTextViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(false, animated: true)
 
         updateSubscriptionInfo()
         markAsRead()
@@ -146,7 +151,11 @@ final class ChatViewController: SLKTextViewController {
     }
 
     fileprivate func setupTitleView() {
+        let viewFrame = self.view.frame
+
         let view = ChatTitleView.instantiateFromNib()
+        view?.frame = CGRect(x: 0, y: 0, width: viewFrame.width, height: view?.frame.height ?? 0)
+
         self.navigationItem.titleView = view
         chatTitleView = view
 

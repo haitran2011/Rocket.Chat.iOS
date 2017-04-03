@@ -22,7 +22,7 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" showsHorizontalScrollIndicator="NO" showsVerticalScrollIndicator="NO" dataMode="prototypes" style="plain" separatorStyle="none" rowHeight="44" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="fKk-pZ-N3a">
-                                <rect key="frame" x="0.0" y="116" width="375" height="487"/>
+                                <rect key="frame" x="0.0" y="130" width="375" height="473"/>
                                 <color key="backgroundColor" red="0.015686274510000001" green="0.28627450980000002" blue="0.4549019608" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                 <prototypes>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" selectionStyle="blue" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="CellSubscription" id="A3x-rd-OY1" customClass="SubscriptionCell" customModule="Rocket_Chat" customModuleProvider="target">
@@ -84,10 +84,10 @@
                                 </connections>
                             </tableView>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="5g6-R1-nTb">
-                                <rect key="frame" x="0.0" y="0.0" width="375" height="116"/>
+                                <rect key="frame" x="0.0" y="0.0" width="375" height="130"/>
                                 <subviews>
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="qEc-o0-IxJ">
-                                        <rect key="frame" x="15" y="64" width="345" height="37"/>
+                                        <rect key="frame" x="15" y="78" width="345" height="37"/>
                                         <subviews>
                                             <textField opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" textAlignment="natural" minimumFontSize="17" clearButtonMode="whileEditing" translatesAutoresizingMaskIntoConstraints="NO" id="TPV-i5-hsW" customClass="TintedTextField" customModule="Rocket_Chat" customModuleProvider="target">
                                                 <rect key="frame" x="5" y="0.0" width="335" height="37"/>
@@ -116,7 +116,7 @@
                                         </constraints>
                                     </view>
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="ArO-ez-uRr" userLabel="User View">
-                                        <rect key="frame" x="0.0" y="0.0" width="375" height="64"/>
+                                        <rect key="frame" x="0.0" y="14" width="375" height="64"/>
                                         <subviews>
                                             <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Arrow Down" translatesAutoresizingMaskIntoConstraints="NO" id="QXa-y8-P03">
                                                 <rect key="frame" x="340" y="21.5" width="20" height="20"/>
@@ -164,10 +164,10 @@
                                 <color key="backgroundColor" red="0.0067813492888250913" green="0.23202088336929722" blue="0.37039987959908049" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                 <constraints>
                                     <constraint firstItem="ArO-ez-uRr" firstAttribute="leading" secondItem="5g6-R1-nTb" secondAttribute="leading" id="7ET-xR-4Fq"/>
-                                    <constraint firstItem="ArO-ez-uRr" firstAttribute="top" secondItem="5g6-R1-nTb" secondAttribute="top" id="AZK-JU-dXH"/>
+                                    <constraint firstItem="ArO-ez-uRr" firstAttribute="top" secondItem="5g6-R1-nTb" secondAttribute="top" constant="14" id="AZK-JU-dXH"/>
                                     <constraint firstAttribute="trailing" secondItem="qEc-o0-IxJ" secondAttribute="trailing" constant="15" id="H55-7X-gjE"/>
                                     <constraint firstAttribute="bottom" secondItem="qEc-o0-IxJ" secondAttribute="bottom" constant="15" id="NZy-ya-8tT"/>
-                                    <constraint firstAttribute="height" constant="116" id="ja2-wl-yeX"/>
+                                    <constraint firstAttribute="height" constant="130" id="ja2-wl-yeX"/>
                                     <constraint firstAttribute="trailing" secondItem="ArO-ez-uRr" secondAttribute="trailing" id="rRh-dA-jA4"/>
                                     <constraint firstItem="qEc-o0-IxJ" firstAttribute="leading" secondItem="5g6-R1-nTb" secondAttribute="leading" constant="15" id="yYk-mp-MG0"/>
                                 </constraints>

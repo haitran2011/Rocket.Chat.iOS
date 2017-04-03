@@ -58,14 +58,24 @@ final class SubscriptionsViewController: BaseViewController {
     var groupInfomation: [[String: String]]?
     var groupSubscriptions: [[Subscription]]?
 
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+        return .lightContent
+    }
+
     override func awakeFromNib() {
         super.awakeFromNib()
         subscribeModelChanges()
     }
 
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        navigationController?.setNavigationBarHidden(true, animated: false)
+    }
+
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         updateCurrentUserInformation()
+        navigationController?.setNavigationBarHidden(true, animated: true)
     }
 
     override func viewWillDisappear(_ animated: Bool) {
