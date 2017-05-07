@@ -10,10 +10,12 @@ import Foundation
 import UIKit
 
 class BaseNavigationController: UINavigationController {
+    var value: String?
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
+        value = "abc"
+        print(value!)
         let navBar = self.navigationBar
         navBar.tintColor = .RCBlue()
     }
